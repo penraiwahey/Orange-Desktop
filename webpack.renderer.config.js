@@ -1,10 +1,11 @@
 const rules = require("./webpack.rules");
 
+// CSS loader
 rules.push({
-  test: /\.css$/,
+  test: /\.css$/i,
   use: [
-    { loader: "style-loader" },
-    { loader: "css-loader" },
+    "style-loader",
+    "css-loader",
     {
       loader: "postcss-loader",
       options: {
@@ -16,9 +17,17 @@ rules.push({
   ],
 });
 
+// รูปภาพ loader
+rules.push({
+  test: /\.(png|jpe?g|gif|svg)$/i,
+  type: "asset/resource",
+});
+
 module.exports = {
-  // Put your normal webpack config below here
   module: {
-    rules,
+    rules, // ต้องเป็น array
+  },
+  resolve: {
+    extensions: [".js", ".jsx", ".json"],
   },
 };
