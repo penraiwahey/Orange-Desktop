@@ -60,16 +60,16 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center p-8 bg-white">
+      <div className="flex flex-1 flex-col items-center justify-center p-8 bg-white text-black">
         <div className="flex justify-between w-full max-w-md mb-6">
           <h1 className="text-4xl font-bold">Login</h1>
-          <select className="select select-warning w-28">
+          <select className="select select-warning w-28 text-white">
             <option>ไทย</option>
             <option>อังกฤษ</option>
           </select>
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col w-full max-w-md gap-4">
+        <form onSubmit={handleLogin} className="flex flex-col w-full max-w-md gap-4 text-white">
           <input
             type="email"
             placeholder="Email address"
@@ -95,7 +95,7 @@ export default function LoginPage() {
           </div>
 
           <div className="flex justify-between items-center">
-            <label className="flex items-center cursor-pointer">
+            <label className="flex items-center cursor-pointer text-black">
               <input
                 type="checkbox"
                 className="checkbox checkbox-warning mr-2"
