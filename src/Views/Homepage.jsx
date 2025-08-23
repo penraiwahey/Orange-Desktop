@@ -61,43 +61,20 @@ export default function Homepage() {
             ))}
           </div>
 
-          {/* Table content */}
-          <div className="p-4">
-            <div className="overflow-x-auto">
-              <table className="table-auto border-collapse border border-gray-300 w-full text-black">
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="border px-4 py-2"></th>
-                    <th className="border px-4 py-2">Name</th>
-                    <th className="border px-4 py-2">Job</th>
-                    <th className="border px-4 py-2">Favorite Color</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th className="border px-4 py-2">1</th>
-                    <td className="border px-4 py-2">Cy Ganderton</td>
-                    <td className="border px-4 py-2">Quality Control Specialist</td>
-                    <td className="border px-4 py-2">Blue</td>
-                  </tr>
-                  <tr>
-                    <th className="border px-4 py-2">2</th>
-                    <td className="border px-4 py-2">Hart Hagerty</td>
-                    <td className="border px-4 py-2">Desktop Support Technician</td>
-                    <td className="border px-4 py-2">Purple</td>
-                  </tr>
-                  <tr>
-                    <th className="border px-4 py-2">3</th>
-                    <td className="border px-4 py-2">Brice Swyre</td>
-                    <td className="border px-4 py-2">Tax Accountant</td>
-                    <td className="border px-4 py-2">Red</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div>
+              <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
+              <ul class="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+                <li><button class="btn btn-outline btn-warning">Receipt of Purchase Order</button></li>
+                <li><button class="btn btn-outline btn-warning">Purchase Order Packing Receipt</button></li>
+                <li><button class="btn btn-outline btn-warning">Transfer Order Receipt</button></li>
+                <li><button class="btn btn-outline btn-warning">Other Receipt</button></li>
+                <li><button class="btn btn-outline btn-warning">Packing / Receiving</button></li>
+                
+              </ul>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+         
+            </div>
+          </div>
   );
 }
