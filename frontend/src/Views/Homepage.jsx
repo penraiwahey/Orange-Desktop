@@ -1,16 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/Logo.png";
-import Receipt from "./other/Receipt";
-import Packing from "./other/Packing";
-import Transfer from "./other/Transfer";
-import OtherReceipt from "./other/OtherReceipt";
-import PackingReceiving from "./other/PackingReceiving";
+import ProductsPage from "./tab/Tab-one"; // นำเข้ามา
+import ExportPage from "./tab/Tab-two";
+import IdPage from "./tab/Tab-three";
 
 export default function Homepage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [activeMenu, setActiveMenu] = useState("receipt");
 
   const tabs = ["รับสินค้า", "ส่งสินค้า", "ดูรหัสสินค้า"];
 
@@ -62,62 +60,11 @@ export default function Homepage() {
             ))}
           </div>
 
-          <div className="flex w-full h-full justify-items-start">
-            <div className="p-4">
-              <ul className="menu bg-white text-base-content p-4">
-                <li className="pb-4">
-                  <button
-                    className="btn btn-outline btn-warning w-full"
-                    onClick={() => setActiveMenu("receipt")}
-                  >
-                    ใบเสร็จรับเงินใบสั่งซื้อ
-                  </button>
-                </li>
-                <li className="pb-4">
-                  <button
-                    className="btn btn-outline btn-warning w-full"
-                    onClick={() => setActiveMenu("packing")}
-                  >
-                    
-                    ใบเสร็จรับเงินบรรจุภัณฑ์ใบสั่งซื้อ
-                  </button>
-                </li>
-                <li className="pb-4">
-                  <button
-                    className="btn btn-outline btn-warning w-full"
-                    onClick={() => setActiveMenu("transfer")}
-                  >
-                    ใบเสร็จรับเงินโอน
-                  </button>
-                </li>
-                <li className="pb-4">
-                  <button
-                    className="btn btn-outline btn-warning w-full"
-                    onClick={() => setActiveMenu("other")}
-                  >
-                    ใบเสร็จรับเงินอื่น ๆ
-                  </button>
-                </li>
-                <li className="pb-4">
-                  <button
-                    className="btn btn-outline btn-warning w-full"
-                    onClick={() => setActiveMenu("packingReceiving")}
-                  >
-                    ใบเสร็จรับเงินบรรจุภัณฑ์ / รับสินค้า
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-
-
-            <div className="w-1/2 p-4 text-black">
-              {activeMenu === "receipt" && <Receipt />}
-              {activeMenu === "packing" && <Packing />}
-              {activeMenu === "transfer" && <Transfer />}
-              {activeMenu === "other" && <OtherReceipt />}
-              {activeMenu === "packingReceiving" && <PackingReceiving />}
-            </div>
+          {/* Content ของ tab */}
+          <div className="w-full h-full">
+            {activeTab === 0 && <ProductsPage />} {/* หน้า tab สินค้า */}
+            {activeTab === 1 && <ExportPage />}
+            {activeTab === 2 && <IdPage />}
           </div>
         </div>
       </div>
