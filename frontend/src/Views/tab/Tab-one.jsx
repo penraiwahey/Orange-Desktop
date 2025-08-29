@@ -11,9 +11,9 @@ export default function ProductsPage() {
   const [activeMenu, setActiveMenu] = useState("receipt");
 
   return (
-    <div className="flex w-full h-full">
+    <div className="flex">
       {/* Sidebar Menu */}
-      <div className="p-4">
+      <div className="p-4 min-w-80">
         <ul className="menu bg-white text-base-content p-4">
           <li className="pb-4">
             <button

@@ -5,11 +5,11 @@ export default function Receipt() {
   return (
 <div>
         <h2 className="text-xl font-semibold mb-4 text-black">
-            ใบเสร็จอื่นๆ
+            ใบเสร็จรับเงินใบสั่งซื้อ
         </h2>
-        <div class="flex justify-between">
-        <div class="w-1/2">
-          <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md">
+        <div className="flex-col md:flex-row flex gap-4">
+        <div>
+          <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md min-w-80">
               <div>
                   <label className="block text-gray-700">
                       หมายเลขใบจัดซื้อ
@@ -74,8 +74,7 @@ export default function Receipt() {
         </div>
         
                   {/* ข้อมูลสินค้า + ตาราง */}
-              <div className="mt-8 w-1/2">
-                <h3 className="text-lg font-semibold mb-2">รายการสินค้า</h3>
+              <div className="w-1/2 ml-5">
 
                 <table className="min-w-full bg-white border border-gray-300 text-sm">
                   <thead className="bg-gray-200 text-gray-700">
@@ -123,9 +122,10 @@ export default function Receipt() {
                     </tr>
                   </tbody>
                 </table>
+                
               </div>
               </div>
-        
+
             </div>
   );
 }

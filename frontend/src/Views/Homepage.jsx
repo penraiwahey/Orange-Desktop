@@ -10,7 +10,7 @@ export default function Homepage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
 
-  const tabs = ["รับสินค้า", "ส่งสินค้า", "ดูรหัสสินค้า"];
+  const tabs = ["รับสินค้า", "จัดการใบจัดซื้อ", "ข้อมูลสินค้า"];
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -21,16 +21,16 @@ export default function Homepage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="flex flex-col items-center justify-center bg-yellow-500 w-20 p-2 text-white">
+      <div className="flex flex-col items-center justify-center bg-warning w-20 p-2 text-white">
         <div className="flex flex-col items-center justify-center h-12 w-12 mb-4">
           <img src={Logo} alt="Logo" className="w-full h-full object-contain" />
         </div>
-        <button className="mb-2">🏠</button>
+        {/* <button className="mb-2">🏠</button>
         <button className="mb-2">ℹ️</button>
-        <button className="mb-2">📦</button>
-        <button onClick={handleLogout} className="mt-auto text-red-500">
+        <button className="mb-2">📦</button> */}
+        <button onClick={handleLogout} class="btn btn-soft btn-error mt-auto">
           Logout
-        </button>
+          </button>
       </div>
 
       {/* Main Content */}
