@@ -7,36 +7,37 @@ export default function Receipt() {
         <h2 className="text-xl font-semibold mb-4 text-black">
             OtherReceipt
         </h2>
+        <div class="flex justify-between">
+        <div class="w-1/2">
+          <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md">
+              <div>
+                  <label className="block text-gray-700">
+                      หมายเลขใบจัดซื้อ
+                  </label>
+                  <input
+                      type="text"
+                      className="w-full p-2 border rounded"
+                      placeholder="ใส่เลขที่ใบจัดซื้อ"
+                  />
+              </div>
 
-        <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md">
-    <div>
-        <label className="block text-gray-700">
-            หมายเลขใบจัดซื้อ
-        </label>
-        <input
-            type="text"
-            className="w-full p-2 border rounded"
-            placeholder="ใส่เลขที่ใบจัดซื้อ"
-        />
-    </div>
+              <div>
+                  <label className="block text-gray-700">ซัพพลายเออร์</label>
+                  <select className="w-full p-2 border rounded">
+                  <option>เลือกซัพพลายเออร์</option>
+                  <option>ซัพพลายเออร์ A</option>
+                  <option>ซัพพลายเออร์ B</option>
+                  </select>
+              </div>
 
-    <div>
-        <label className="block text-gray-700">ซัพพลายเออร์</label>
-        <select className="w-full p-2 border rounded">
-        <option>เลือกซัพพลายเออร์</option>
-         <option>ซัพพลายเออร์ A</option>
-        <option>ซัพพลายเออร์ B</option>
-        </select>
-    </div>
-
-    <div>
-        <label className="block text-gray-700">รหัสสินค้า</label>
-        <input
-            type="text"
-            className="w-full p-2 border rounded"
-            placeholder="ใส่รหัสสินค้า"
-        />
-    </div>
+              <div>
+                  <label className="block text-gray-700">รหัสสินค้า</label>
+                  <input
+                      type="text"
+                      className="w-full p-2 border rounded"
+                      placeholder="ใส่รหัสสินค้า"
+                  />
+              </div>
 
                     <div>
                       <label className="block text-gray-700">หมายเลขกำกับ</label>
@@ -70,8 +71,10 @@ export default function Receipt() {
                       </button>
                     </div>
                   </form>
+        </div>
+        
                   {/* ข้อมูลสินค้า + ตาราง */}
-              <div className="mt-8">
+              <div className="mt-8 w-1/2">
                 <h3 className="text-lg font-semibold mb-2">รายการสินค้า</h3>
 
                 <table className="min-w-full bg-white border border-gray-300 text-sm">
@@ -121,6 +124,8 @@ export default function Receipt() {
                   </tbody>
                 </table>
               </div>
+              </div>
+        
             </div>
   );
 }

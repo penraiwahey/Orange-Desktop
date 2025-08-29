@@ -64,7 +64,7 @@ export default function Homepage() {
 
           <div className="flex w-full h-full justify-items-start">
             <div className="p-4">
-              <ul className="menu bg-white text-base-content w-1/3 md:w-80 p-4">
+              <ul className="menu bg-white text-base-content p-4">
                 <li className="pb-4">
                   <button
                     className="btn btn-outline btn-warning w-full"

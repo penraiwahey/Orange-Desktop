@@ -120,6 +120,8 @@ export default function Receipt() {
                     </tr>
                   </tbody>
                 </table>
+
+                
               </div>
             </div>
   );
