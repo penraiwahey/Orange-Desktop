@@ -5,9 +5,9 @@ export default function Receipt() {
   return (
 <div>
         <h2 className="text-xl font-semibold mb-4 text-black">
-            Receipt of Purchase Order
+            ใบเสร็จรับเงินใบสั่งซื้อ
         </h2>
-        <div class="flex justify-between">
+        <div class="flex-col md:flex-row flex gap-4">
         <div class="w-1/2">
           <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md min-w-80">
               <div>

@@ -5,7 +5,7 @@ export default function Receipt() {
   return (
 <div>
         <h2 className="text-xl font-semibold mb-4 text-black">
-            transfer
+            ใบเสร็จรับเงินโอน
         </h2>
 
         <form className="space-y-4 bg-gray-100 p-6 rounded-md shadow-md">

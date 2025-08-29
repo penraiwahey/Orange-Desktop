@@ -5,7 +5,7 @@ export default function Receipt() {
   return (
 <div>
         <h2 className="text-xl font-semibold mb-4 text-black">
-            OtherReceipt
+            ใบเสร็จอื่นๆ
         </h2>
         <div class="flex justify-between">
         <div class="w-1/2">

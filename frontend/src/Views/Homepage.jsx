@@ -10,7 +10,7 @@ import PackingReceiving from "./other/PackingReceiving";
 export default function Homepage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [activeMenu, setActiveMenu] = useState(null);
+  const [activeMenu, setActiveMenu] = useState("receipt");
 
   const tabs = ["รับสินค้า", "ส่งสินค้า", "ดูรหัสสินค้า"];
 
@@ -70,7 +70,7 @@ export default function Homepage() {
                     className="btn btn-outline btn-warning w-full"
                     onClick={() => setActiveMenu("receipt")}
                   >
-                    Receipt of Purchase Order
+                    ใบเสร็จรับเงินใบสั่งซื้อ
                   </button>
                 </li>
                 <li className="pb-4">
@@ -78,7 +78,8 @@ export default function Homepage() {
                     className="btn btn-outline btn-warning w-full"
                     onClick={() => setActiveMenu("packing")}
                   >
-                    Purchase Order Packing Receipt
+                    
+                    ใบเสร็จรับเงินบรรจุภัณฑ์ใบสั่งซื้อ
                   </button>
                 </li>
                 <li className="pb-4">
@@ -86,7 +87,7 @@ export default function Homepage() {
                     className="btn btn-outline btn-warning w-full"
                     onClick={() => setActiveMenu("transfer")}
                   >
-                    Transfer Order Receipt
+                    ใบเสร็จรับเงินโอน
                   </button>
                 </li>
                 <li className="pb-4">
@@ -94,7 +95,7 @@ export default function Homepage() {
                     className="btn btn-outline btn-warning w-full"
                     onClick={() => setActiveMenu("other")}
                   >
-                    Other Receipt
+                    ใบเสร็จรับเงินอื่น ๆ
                   </button>
                 </li>
                 <li className="pb-4">
@@ -102,7 +103,7 @@ export default function Homepage() {
                     className="btn btn-outline btn-warning w-full"
                     onClick={() => setActiveMenu("packingReceiving")}
                   >
-                    Packing / Receiving
+                    ใบเสร็จรับเงินบรรจุภัณฑ์ / รับสินค้า
                   </button>
                 </li>
               </ul>
