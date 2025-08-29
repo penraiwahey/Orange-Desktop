@@ -22,8 +22,8 @@ export default function Homepage() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="flex flex-col items-center justify-center bg-warning w-20 p-2 text-white">
-        <div className="flex flex-col items-center justify-center h-12 w-12 mb-4">
-          <img src={Logo} alt="Logo" className="w-full h-full object-contain" />
+        <div className="flex flex-col items-center justify-center h-14 w-14 mb-4 bg-warning rounded-full border-2 border-white">
+          <img src={Logo} alt="Logo" className="w-12 h-12 object-contain bg-white rounded-full" />
         </div>
         {/* <button className="mb-2">🏠</button>
         <button className="mb-2">ℹ️</button>
