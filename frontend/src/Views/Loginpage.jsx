@@ -14,8 +14,7 @@ export default function LoginPage() {
     const sessionExpiration = localStorage.getItem("sessionExpires");
 
     if (storedSession && new Date() < new Date(sessionExpiration)) {
-      console.log("Session found, redirecting...");
-      navigate("/home"); // ✅ ใช้ navigate
+      navigate("/home");
     }
   }, [navigate]);
 
@@ -35,8 +34,7 @@ export default function LoginPage() {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("sessionExpires", expirationDate.toISOString());
         }
-        console.log("Redirect to Home...");
-        navigate("/home"); // ✅ ไม่ต้องใช้ window.location
+        navigate("/home");
       });
     } else {
       Swal.fire({
@@ -49,79 +47,94 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gradient-to-r from-orange-200 via-yellow-100 to-amber-200">
       {/* Left panel */}
-      <div className="hidden md:flex bg-amber-500 w-1/3 flex-col items-center justify-center p-8 text-white">
-        <div className="text-center mb-8">
-          <p className="text-3xl font-bold leading-relaxed">
-            คำอธิบายหรือข้อความต้อนรับ<br />เว็บไซต์ Ecommerce
-          </p>
-        </div>
+      <div className="hidden md:flex bg-amber-600 w-1/3 flex-col items-center justify-center p-12 text-white shadow-lg">
+        <h2 className="text-4xl font-extrabold mb-6 drop-shadow-lg">
+          ยินดีต้อนรับสู่ Ecommerce
+        </h2>
+        <p className="text-lg leading-relaxed max-w-sm text-amber-100">
+          พบประสบการณ์ช้อปปิ้งที่ดีที่สุดกับเรา สินค้าหลากหลาย ราคาถูกใจ
+          พร้อมโปรโมชั่นมากมายรอคุณอยู่
+        </p>
       </div>
 
       {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center p-8 bg-white text-black">
-        <div className="flex justify-between w-full max-w-md mb-6">
-          <h1 className="text-4xl font-bold">Login</h1>
-          <select className="select select-warning w-28 text-white">
-            <option>ไทย</option>
-            <option>อังกฤษ</option>
-          </select>
-        </div>
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-lg shadow-xl p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-extrabold text-amber-600">Login</h1>
+            <select className="select select-warning w-24 text-white bg-amber-600 rounded-md shadow-md">
+              <option>ไทย</option>
+              <option>อังกฤษ</option>
+            </select>
+          </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col w-full max-w-md gap-4 text-white">
-          <input
-            type="email"
-            placeholder="Email address"
-            className="input input-bordered w-full rounded-lg px-4 py-3"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <div className="relative">
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
             <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="input input-bordered w-full rounded-lg px-4 py-3 pr-10"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="email"
+              placeholder="Email address"
+              className="rounded-xl px-5 py-3 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-600 hover:text-gray-800"
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </button>
-          </div>
 
-          <div className="flex justify-between items-center">
-            <label className="flex items-center cursor-pointer text-black">
+            <div className="relative">
               <input
-                type="checkbox"
-                className="checkbox checkbox-warning mr-2"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="w-full rounded-xl px-5 py-3 pr-12 bg-gray-900 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              Remember me
-            </label>
-            <a href="#" className="text-orange-500 hover:underline text-sm">
-              Forgot password?
-            </a>
-          </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-amber-400 hover:text-amber-600"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
 
-          <button
-            type="submit"
-            className="btn bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors duration-200"
-          >
-            Login
-          </button>
-          <p className="text-center text-gray-600">
-            Don't have an account?{" "}
-            <a href="#" className="text-orange-500 hover:underline">
-              Sign up
-            </a>
-          </p>
-        </form>
+            <div className="flex justify-between items-center text-gray-700">
+              <label className="flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-warning mr-2"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                Remember me
+              </label>
+              <a
+                href="#"
+                className="text-amber-600 hover:text-amber-800 underline text-sm"
+              >
+                Forgot password?
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl shadow-lg transition-all"
+            >
+              Login
+            </button>
+
+            <p className="text-center text-gray-500">
+              Don't have an account?{" "}
+              <a
+                href="#"
+                className="text-amber-500 hover:text-amber-700 font-semibold underline"
+              >
+                Sign up
+              </a>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
