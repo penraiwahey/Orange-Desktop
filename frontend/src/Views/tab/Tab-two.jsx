@@ -10,19 +10,19 @@ export default function ProductsPage() {
       <div className="p-4 min-w-80">
         <ul className="space-y-2">
           <li>
-
+            <input type="text" placeholder="Warning" class="input input-warning" />
           </li>
           <li>
-
+            <input type="text" placeholder="Warning" class="input input-warning" />
           </li>
           <li>
-
+            <input type="text" placeholder="Warning" class="input input-warning" />
           </li>
         </ul>
       </div>
       {/* ตาราง */}
       <div className="flex-1 p-4 text-black">
-
+        
       </div>
     </div>
   );
