@@ -5,7 +5,9 @@
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
+    "backend": "node ../backend/server.js",
     "start": "electron-forge start",
+    "start:all": "concurrently \"npm run backend\" \"npm run start:frontend\"",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
@@ -27,6 +29,7 @@
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "autoprefixer": "^10.4.19",
     "babel-loader": "^9.2.1",
+    "concurrently": "^9.2.1",
     "css-loader": "^6.0.0",
     "electron": "31.1.0",
     "node-loader": "^2.0.0",
