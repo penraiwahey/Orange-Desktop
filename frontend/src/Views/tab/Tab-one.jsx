@@ -3,64 +3,191 @@ import { useState } from "react";
 import React from "react";
 
 export default function ProductsPage() {
+  const [tempList, setTempList] = useState([]); // เก็บสินค้าชั่วคราว
+  const [tableData, setTableData] = useState([]); // เก็บสินค้าที่เพิ่มเข้าตารางแล้ว
+  const [form, setForm] = useState({
+    orderId: "",
+    productId: "",
+    productName: "",
+    quantity: "",
+    file: null,
+  });
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
+  };
+
+  // เพิ่มเข้า list ชั่วคราว
+  const handleAddToTempList = () => {
+    if (!form.productName) return;
+    setTempList((prev) => [...prev, form]);
+    setForm({ orderId: "", productId: "", productName: "", quantity: "", file: null });
+  };
+
+  // เพิ่ม list ชั่วคราวทั้งหมดเข้า table
+  const handleConfirmAddToTable = () => {
+    setTableData((prev) => [...prev, ...tempList]);
+    setTempList([]); // เคลียร์ลิสต์หลังเพิ่มเสร็จ
+  };
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-black p-4">นำเข้าสินค้า</h1>
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* ฟอร์มกรอก */}
-        <div className="p-4 min-w-80">
+        <div className="p-4 min-w-80 max-w-80 border-r border-gray-300">
           <ul className="space-y-2">
             <li>
-            <input type="text" placeholder="Warning" class="input input-warning" />
-          </li>
-          <li>
-            <input type="text" placeholder="Warning" class="input input-warning" />
-          </li>
-          <li>
-            <input type="text" placeholder="Warning" class="input input-warning" />
-          </li>
-                    <li>
-            <button className="btn btn-warning">เพิ่มสินค้า</button>
-          </li>
-        </ul>
-      </div>
-      {/* ตาราง */}
-      <div className="flex-1 p-4 text-black">
-          <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <table class="table">
-              <thead>
+              <input
+                type="text"
+                name="orderId"
+                value={form.orderId}
+                onChange={handleChange}
+                placeholder="รหัสหมายเลขจัดซื้อ"
+                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
+              />
+            </li>
+            <li>
+              <input
+                type="text"
+                name="productId"
+                value={form.productId}
+                onChange={handleChange}
+                placeholder="รหัสสินค้า"
+                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
+              />
+            </li>
+            <li>
+              <input
+                type="text"
+                name="productName"
+                value={form.productName}
+                onChange={handleChange}
+                placeholder="ชื่อสินค้า"
+                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
+              />
+            </li>
+            <li>
+              <input
+                type="text"
+                name="quantity"
+                value={form.quantity}
+                onChange={handleChange}
+                placeholder="จำนวน"
+                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
+              />
+            </li>
+            <li>
+              <input
+                type="file"
+                name="file"
+                onChange={handleChange}
+                className="file-input file-input-warning w-full bg-white focus:border-amber-700 text-gray-500"
+              />
+            </li>
+            <li>
+              <p className="text-gray-500">วันที่จะลงให้อัตโนมัติ</p>
+            </li>
+            {/* show list */}
+            <li className="w-80">
+              <div className="text-sm text-black">
+                <ul className="flex max-h-40 overflow-y-auto space-y-1 pr-1">
+                  {tempList.length === 0 ? (
+                    <li className="text-gray-400">ยังไม่มีสินค้าในลิสต์</li>
+                  ) : (
+                    tempList.map((item, i) => (
+                      <li
+                        key={i}
+                        className="truncate bg-amber-500 rounded pl-2 pr-2 py-1"
+                        title={`${item.productName} (${item.quantity})`}
+                      >
+                        {item.productName} ({item.quantity})
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </li>
+
+            <li className="flex gap-5">
+              <div className="flex gap-2 mt-20">
+                <button
+                  onClick={handleAddToTempList}
+                  className="btn btn-outline btn-warning"
+                >
+                  ลงลิสต์
+                </button>
+                <button
+                  onClick={() => setTempList([])}
+                  className="btn btn-error"
+                >
+                  ยกเลิกลิสต์
+                </button>
+              </div>
+
+              <button
+                onClick={handleConfirmAddToTable}
+                className="btn btn-warning mt-20"
+                disabled={tempList.length === 0}
+              >
+                เพิ่มสินค้า
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        {/* ตาราง */}
+        <div className="flex-1 p-4 text-black">
+          <div className="overflow-x-auto rounded-box border border-black bg-black/5 border-b-2">
+            <table className="table w-full bg-white text-black">
+              <thead className="text-black">
                 <tr>
-                  <th></th>
-                  <th>Name</th>
-                  <th>Job</th>
-                  <th>Favorite Color</th>
+                  <th>หมายเลขจัดซื้อ</th>
+                  <th>รูปสินค้า</th>
+                  <th>รหัสสินค้า</th>
+                  <th>ชื่อสินค้า</th>
+                  <th>จำนวน</th>
+                  <th>เมื่อวันที่</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <th>1</th>
-                  <td>Cy Ganderton</td>
-                  <td>Quality Control Specialist</td>
-                  <td>Blue</td>
-                </tr>
-                <tr>
-                  <th>2</th>
-                  <td>Hart Hagerty</td>
-                  <td>Desktop Support Technician</td>
-                  <td>Purple</td>
-                </tr>
-                <tr>
-                  <th>3</th>
-                  <td>Brice Swyre</td>
-                  <td>Tax Accountant</td>
-                  <td>Red</td>
-                </tr>
+                {tableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center text-gray-400">
+                      ยังไม่มีสินค้าในตาราง
+                    </td>
+                  </tr>
+                ) : (
+                  tableData.map((item, i) => (
+                    <tr key={i}>
+                      <td>{item.orderId || "-"}</td>
+                      <td>
+                        {item.file ? (
+                          <img
+                            src={URL.createObjectURL(item.file)}
+                            alt="สินค้า"
+                            className="w-12 h-12 object-contain"
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td>{item.productId || "-"}</td>
+                      <td>{item.productName}</td>
+                      <td>{item.quantity || "-"}</td>
+                      <td>{new Date().toLocaleDateString()}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
+        </div>
       </div>
-    </div>
     </div>
   );
 }

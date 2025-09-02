@@ -32,11 +32,11 @@ module.exports = {
     {
       name: '@electron-forge/plugin-webpack',
       config: {
-          forge: {
-            electronVersion: 'latest',
-            packagerConfig: {
-              icon: './src/assets/icon.ico', // สำหรับ Dev
-            },
+        forge: {
+          electronVersion: 'latest',
+          packagerConfig: {
+            icon: './src/assets/Logo',
+          },
         },
         mainConfig: './webpack.main.config.js',
         renderer: {
