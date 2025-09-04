@@ -1,10 +1,10 @@
-// src/pages/ProductsPage.jsx
-import { useState } from "react";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 export default function ProductsPage() {
+  const [existingProducts, setExistingProducts] = useState([]);
   const [tempList, setTempList] = useState([]); // เก็บสินค้าชั่วคราว
-  const [tableData, setTableData] = useState([]); // เก็บสินค้าที่เพิ่มเข้าตารางแล้ว
+  const [tableData, setTableData] = useState([]); // เก็บประวัติการนำเข้าสินค้า
   const [form, setForm] = useState({
     orderId: "",
     productId: "",
@@ -12,6 +12,15 @@ export default function ProductsPage() {
     quantity: "",
     file: null,
   });
+
+  // (ถ้ามีการดึงข้อมูลสินค้าที่มีอยู่)
+  useEffect(() => {
+    // ตัวอย่างการดึงข้อมูลสินค้าที่มีอยู่ในระบบ
+    fetch("http://localhost:5000/products")
+      .then((res) => res.json())
+      .then((data) => setExistingProducts(data))
+      .catch((err) => console.error("Error fetching products:", err));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -21,17 +30,134 @@ export default function ProductsPage() {
     }));
   };
 
-  // เพิ่มเข้า list ชั่วคราว
-  const handleAddToTempList = () => {
-    if (!form.productName) return;
-    setTempList((prev) => [...prev, form]);
-    setForm({ orderId: "", productId: "", productName: "", quantity: "", file: null });
+  // เพิ่มเข้า list ชั่วคราว พร้อม SweetAlert2 ตรวจสอบก่อนลงลิสต์
+  const handleAddToTempList = async () => {
+    if (!form.productId.trim()) {
+      return Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "กรุณาใส่รหัสสินค้า",
+      });
+    }
+
+    // ตรวจสอบว่ารหัสสินค้ามีอยู่แล้วในระบบ
+    const exists = existingProducts.find(
+      (p) => p.product_id === form.productId.trim()
+    );
+
+    // ถ้าเป็นสินค้าคนใหม่ (ไม่พบ) ต้องใส่ชื่อสินค้า
+    if (!exists && (!form.productName || !form.productName.trim())) {
+      return Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "สำหรับสินค้าคนใหม่ กรุณาใส่ชื่อสินค้า",
+      });
+    }
+
+    // แสดง SweetAlert2 ยืนยันการลงลิสต์ พร้อมแสดงรายละเอียด
+    const result = await Swal.fire({
+      title: "คุณต้องการลงลิสต์หรือไม่?",
+      html: `<p>รหัสสินค้า: <strong>${form.productId.trim()}</strong></p>
+             <p>ชื่อสินค้า: <strong>${exists ? (form.productName.trim() || "-") : form.productName.trim()}</strong></p>
+             <p>จำนวน: <strong>${form.quantity}</strong></p>`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ลงลิสต์",
+      cancelButtonText: "ยกเลิก",
+    });
+    
+    if (result.isConfirmed) {
+      setTempList((prev) => [...prev, form]);
+      setForm({ orderId: "", productId: "", productName: "", quantity: "", file: null });
+      Swal.fire({
+        icon: "success",
+        title: "ลงลิสต์สำเร็จ",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
   };
 
-  // เพิ่ม list ชั่วคราวทั้งหมดเข้า table
-  const handleConfirmAddToTable = () => {
-    setTableData((prev) => [...prev, ...tempList]);
-    setTempList([]); // เคลียร์ลิสต์หลังเพิ่มเสร็จ
+  // กดยืนยันการยกเลิกลิสต์ โดยใช้ SweetAlert2 เพื่อยืนยันการล้าง tempList
+  const handleCancelList = () => {
+    Swal.fire({
+      title: "คุณต้องการยกเลิกลิสต์หรือไม่?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "ยืนยัน",
+      cancelButtonText: "ยกเลิก"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setTempList([]);
+        Swal.fire({
+          icon: "success",
+          title: "ยกเลิกลิสต์เรียบร้อยแล้ว",
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    });
+  };
+
+  // เพิ่ม list ชั่วคราวทั้งหมดเข้า table พร้อมส่งข้อมูลไปยัง API
+  // หลังจากส่งข้อมูลแล้ว ระบบจะดึงประวัติทั้งหมดจาก API มาแสดงในตาราง
+  const handleConfirmAddToTable = async () => {
+    const result = await Swal.fire({
+      title: "คุณต้องการเพิ่มสินค้าทั้งหมดในลิสต์หรือไม่?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "เพิ่มสินค้า",
+      cancelButtonText: "ยกเลิก"
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      // ส่งเป็นครั้งเดียว โดย wrap รายการทั้งหมดลงใน key "items"
+      const items = tempList.map(item => ({
+        product_id: item.productId.trim(),
+        product_name: item.productName ? item.productName.trim() : "",
+        quantity: parseInt(item.quantity, 10)
+      }));
+      
+      const response = await fetch("http://localhost:5000/imports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items })
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errorData.error,
+        });
+        return;
+      }
+  
+      // ดึงประวัติการนำเข้าสินค้าทั้งหมดจาก DB มาแสดงในตาราง
+      const res = await fetch("http://localhost:5000/imports");
+      const data = await res.json();
+      setTableData(data);
+  
+      setTempList([]); // เคลียร์ลิสต์หลังจากเพิ่มสินค้าเสร็จ
+      Swal.fire({
+        icon: "success",
+        title: "เพิ่มสินค้าเรียบร้อยแล้ว",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: err.message,
+      });
+    }
   };
 
   return (
@@ -67,7 +193,7 @@ export default function ProductsPage() {
                 name="productName"
                 value={form.productName}
                 onChange={handleChange}
-                placeholder="ชื่อสินค้า"
+                placeholder="ชื่อสินค้า (สำหรับสินค้าคนใหม่)"
                 className="input input-warning w-full bg-white focus:border-amber-700 text-black"
               />
             </li>
@@ -92,7 +218,7 @@ export default function ProductsPage() {
             <li>
               <p className="text-gray-500">วันที่จะลงให้อัตโนมัติ</p>
             </li>
-            {/* show list */}
+            {/* แสดงรายการสินค้าใน tempList */}
             <li className="w-80">
               <div className="text-sm text-black">
                 <ul className="flex max-h-40 overflow-y-auto space-y-1 pr-1">
@@ -112,7 +238,6 @@ export default function ProductsPage() {
                 </ul>
               </div>
             </li>
-
             <li className="flex gap-5">
               <div className="flex gap-2 mt-20">
                 <button
@@ -122,13 +247,12 @@ export default function ProductsPage() {
                   ลงลิสต์
                 </button>
                 <button
-                  onClick={() => setTempList([])}
+                  onClick={handleCancelList}
                   className="btn btn-error"
                 >
                   ยกเลิกลิสต์
                 </button>
               </div>
-
               <button
                 onClick={handleConfirmAddToTable}
                 className="btn btn-warning mt-20"
@@ -140,7 +264,7 @@ export default function ProductsPage() {
           </ul>
         </div>
 
-        {/* ตาราง */}
+        {/* ตารางแสดงประวัติการนำเข้าสินค้า */}
         <div className="flex-1 p-4 text-black">
           <div className="overflow-x-auto rounded-box border border-black bg-black/5 border-b-2">
             <table className="table w-full bg-white text-black">
@@ -151,7 +275,7 @@ export default function ProductsPage() {
                   <th>รหัสสินค้า</th>
                   <th>ชื่อสินค้า</th>
                   <th>จำนวน</th>
-                  <th>เมื่อวันที่</th>
+                  <th>วันที่</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,7 +303,7 @@ export default function ProductsPage() {
                       <td>{item.productId || "-"}</td>
                       <td>{item.productName}</td>
                       <td>{item.quantity || "-"}</td>
-                      <td>{new Date().toLocaleDateString()}</td>
+                      <td>{new Date(item.import_date).toLocaleDateString()}</td>
                     </tr>
                   ))
                 )}
