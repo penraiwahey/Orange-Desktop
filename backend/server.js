@@ -1,10 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const mysql = require('mysql2/promise');
 
 const app = express();
 const port = 5000;
 
-// Middleware สำหรับ parse JSON จาก request body
+app.use(cors({
+  origin: "http://localhost:3000"
+}));
 app.use(express.json());
 
 const dbConfig = {
@@ -19,8 +22,6 @@ const dbConfig = {
 let pool;
 async function initDatabase() {
   const connection = await mysql.createConnection(dbConfig);
-
-  // สร้าง database
   await connection.query("CREATE DATABASE IF NOT EXISTS pos");
   console.log("✅ Database 'pos' ready");
 
@@ -30,6 +31,9 @@ async function initDatabase() {
     waitForConnections: true,
     connectionLimit: 10
   });
+
+  // Disable foreign key checks to allow dropping tables in any order during development reset.
+  await pool.query('SET FOREIGN_KEY_CHECKS = 0;');
 
   // products (สินค้าในสต็อก)
   await pool.query(`
@@ -45,48 +49,32 @@ async function initDatabase() {
 
   // imports (การนำเข้า)
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS imports (
+    DROP TABLE IF EXISTS imports;
+  `);
+  await pool.query(`
+    CREATE TABLE imports (
       import_id INT AUTO_INCREMENT PRIMARY KEY,
+      product_id VARCHAR(50) NOT NULL,
+      product_name VARCHAR(255) NOT NULL,
+      quantity INT NOT NULL,
       import_date DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
   console.log("✅ Table 'imports' ready");
 
-  // import_items
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS import_items (
-      import_item_id INT AUTO_INCREMENT PRIMARY KEY,
-      import_id INT,
-      product_id VARCHAR(50),
-      quantity INT NOT NULL,
-      FOREIGN KEY (import_id) REFERENCES imports(import_id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
-    )
-  `);
-  console.log("✅ Table 'import_items' ready");
-
   // exports (การนำออก)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS exports (
       export_id INT AUTO_INCREMENT PRIMARY KEY,
-      address TEXT NOT NULL,
+      product_id VARCHAR(50) NOT NULL,
+      quantity INT NOT NULL,
       export_date DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
   console.log("✅ Table 'exports' ready");
 
-  // export_items
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS export_items (
-      export_item_id INT AUTO_INCREMENT PRIMARY KEY,
-      export_id INT,
-      product_id VARCHAR(50),
-      quantity INT NOT NULL,
-      FOREIGN KEY (export_id) REFERENCES exports(export_id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
-    )
-  `);
-  console.log("✅ Table 'export_items' ready");
+  // Re-enable foreign key checks
+  await pool.query('SET FOREIGN_KEY_CHECKS = 1;');
 
   // เติมสินค้าเริ่มต้นถ้ายังไม่มี
   const [productsCount] = await pool.query("SELECT COUNT(*) AS count FROM products");
@@ -103,7 +91,7 @@ async function initDatabase() {
   }
 }
 
-// Endpoint สำหรับดึงรายการสินค้า
+// Endpoint สำหรับดึงรายการสินค้าทั้งหมด
 app.get('/products', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM products');
@@ -113,17 +101,83 @@ app.get('/products', async (req, res) => {
   }
 });
 
-// Endpoint สำหรับดึงรายการนำเข้า
+// Endpoint สำหรับดึงประวัติการนำเข้าสินค้า (รวมชื่อสินค้า)
 app.get('/imports', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM imports');
+    const [rows] = await pool.query(`
+      SELECT 
+        import_id,
+        product_id,
+        product_name,
+        quantity,
+        import_date
+      FROM imports
+      ORDER BY import_date DESC
+    `);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Endpoint สำหรับดึงรายการส่งออก
+app.post('/imports', async (req, res) => {
+  const { items } = req.body;
+
+  // Validate that the request body contains a non-empty array of items.
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Invalid request: 'items' must be a non-empty array." });
+  }
+
+  let connection;
+  try {
+    // Get a connection from the pool and start a transaction.
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Loop through each item in the array and perform the database operations.
+    for (const item of items) {
+      const { product_id, product_name, quantity } = item;
+
+      // Basic validation for each item
+      if (!product_id || !product_name || quantity === undefined) {
+        throw new Error("Missing required fields in one of the items: product_id, product_name, or quantity");
+      }
+      
+      // Use a single query to either insert a new product or update the stock of an existing one.
+      // The ON DUPLICATE KEY UPDATE clause handles the logic efficiently.
+      const upsertQuery = `
+        INSERT INTO products (product_id, product_name, stock_quantity) 
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+        stock_quantity = stock_quantity + VALUES(stock_quantity);
+      `;
+      await connection.query(upsertQuery, [product_id, product_name, quantity]);
+
+      // Record the import transaction in the imports table
+      const importQuery = `
+        INSERT INTO imports (product_id, product_name, quantity) 
+        VALUES (?, ?, ?);
+      `;
+      await connection.query(importQuery, [product_id, product_name, quantity]);
+    }
+
+    // Commit the transaction if all queries were successful.
+    await connection.commit();
+    res.status(201).json({ message: "Import successful" });
+  } catch (error) {
+    // If an error occurred, roll back the transaction.
+    if (connection) await connection.rollback();
+    console.error("Error in /imports:", error);
+    // Send a generic 500 status with the error message.
+    res.status(500).json({ error: error.message });
+  } finally {
+    // Always release the connection back to the pool.
+    if (connection) connection.release();
+  }
+});
+
+
+// Endpoint สำหรับดึงประวัติการส่งออก (Exports)
 app.get('/exports', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM exports');
@@ -133,107 +187,33 @@ app.get('/exports', async (req, res) => {
   }
 });
 
-// Endpoint สำหรับสร้างรายการนำเข้า (import)
-// Request body คาดหวังรูปแบบ: { items: [{ product_id, product_name, quantity }] }
-app.post('/imports', async (req, res) => {
-  const { items } = req.body;
-  if (!items || !Array.isArray(items)) {
-    return res.status(400).json({ error: "Invalid items format" });
-  }
-  let connection;
-  try {
-    connection = await pool.getConnection();
-    await connection.beginTransaction();
-
-    // สร้างรายการนำเข้าใหม่
-    const [importResult] = await connection.query("INSERT INTO imports () VALUES ()");
-    const importId = importResult.insertId;
-
-    // สำหรับแต่ละรายการนำเข้าสินค้า
-    for (const rawItem of items) {
-      console.log("👉 rawItem:", rawItem);
-      const product_id = rawItem.product_id.trim();
-      const quantity = Number(rawItem.quantity);
-
-      if (!product_id) {
-        throw new Error("Missing product_id for one of the items");
-      }
-      if (isNaN(quantity) || quantity <= 0) {
-        throw new Error(`Invalid quantity for product ${product_id}`);
-      }
-
-      // ตรวจสอบว่าสินค้านั้นมีอยู่ในฐานข้อมูลหรือไม่
-      const [rows] = await connection.query(
-        "SELECT * FROM products WHERE product_id = ?",
-        [product_id]
-      );
-
-      if (rows.length > 0) {
-        // ถ้ามีสินค้าอยู่แล้ว ให้ update stock
-        await connection.query(
-          "UPDATE products SET stock_quantity = stock_quantity + ? WHERE product_id = ?",
-          [quantity, product_id]
-        );
-      } else {
-        // ถ้าไม่พบสินค้าในฐานข้อมูล ให้ insert สินค้าใหม่ โดยตรวจสอบว่ามี product_name
-        if (!rawItem.product_name || rawItem.product_name.trim() === "") {
-          throw new Error(`Product name required for new product ${product_id}`);
-        }
-        const product_name = rawItem.product_name.trim();
-        await connection.query(
-          "INSERT INTO products (product_id, product_name, stock_quantity) VALUES (?, ?, ?)",
-          [product_id, product_name, quantity]
-        );
-      }
-      
-      // บันทึกการนำเข้าสินค้าใน import_items
-      await connection.query(
-        "INSERT INTO import_items (import_id, product_id, quantity) VALUES (?, ?, ?)",
-        [importId, product_id, quantity]
-      );
-    }
-
-    await connection.commit();
-    res.status(201).json({ import_id: importId });
-  } catch (error) {
-    if (connection) await connection.rollback();
-    console.error("Error in /imports:", error);
-    res.status(500).json({ error: error.message });
-  } finally {
-    if (connection) connection.release();
-  }
-});
-
 // Endpoint สำหรับสร้างรายการส่งออก (export)
-// Request body คาดหวังรูปแบบ: { address: string, items: [{ product_id, quantity }] }
+// รับข้อมูล: { product_id, quantity }
 app.post('/exports', async (req, res) => {
-  const { address, items } = req.body;
-  if (!address || !items || !Array.isArray(items)) {
-    return res.status(400).json({ error: "Invalid format" });
+  const { product_id, quantity } = req.body;
+  if (!product_id || quantity === undefined) {
+    return res.status(400).json({ error: "Missing required fields: product_id or quantity" });
   }
   let connection;
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // สร้างรายการส่งออกใหม่
-    const [exportResult] = await connection.query("INSERT INTO exports (address) VALUES (?)", [address]);
-    const exportId = exportResult.insertId;
-
-    // ตรวจสอบ stock และบันทึกรายการส่งออกสินค้า
-    for (const item of items) {
-      // ตรวจสอบว่ามี stock เพียงพอหรือไม่
-      const [rows] = await connection.query("SELECT stock_quantity FROM products WHERE product_id = ?", [item.product_id]);
-      const stock = rows[0]?.stock_quantity || 0;
-      if (stock < item.quantity) {
-        throw new Error(`Insufficient stock for product ${item.product_id}`);
-      }
-      await connection.query("INSERT INTO export_items (export_id, product_id, quantity) VALUES (?, ?, ?)", [exportId, item.product_id, item.quantity]);
-      await connection.query("UPDATE products SET stock_quantity = stock_quantity - ? WHERE product_id = ?", [item.quantity, item.product_id]);
+    // ตรวจสอบ stock เพียงพอหรือไม่
+    const [rows] = await connection.query("SELECT stock_quantity FROM products WHERE product_id = ?", [product_id]);
+    const stock = rows[0]?.stock_quantity || 0;
+    if (stock < quantity) {
+      throw new Error(`Insufficient stock for product ${product_id}`);
     }
 
+    // อัปเดต stock
+    await connection.query("UPDATE products SET stock_quantity = stock_quantity - ? WHERE product_id = ?", [quantity, product_id]);
+    
+    // บันทึกรายการส่งออก
+    await connection.query("INSERT INTO exports (product_id, quantity) VALUES (?, ?)", [product_id, quantity]);
+
     await connection.commit();
-    res.status(201).json({ export_id: exportId });
+    res.status(201).json({ message: "Export successful" });
   } catch (error) {
     if (connection) await connection.rollback();
     res.status(500).json({ error: error.message });
@@ -251,5 +231,3 @@ initDatabase()
   .catch(err => {
     console.error("Error initializing database:", err);
   });
-
-

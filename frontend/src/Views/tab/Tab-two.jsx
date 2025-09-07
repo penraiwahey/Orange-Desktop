@@ -59,7 +59,7 @@ export default function ExportPage() {
     }));
 
     try {
-      const response = await fetch("http://localhost:5000/exports", {
+      const response = await fetch("/exports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -235,16 +235,7 @@ export default function ExportPage() {
               </tbody>
             </table>
           </div>
-          {/* ปุ่มส่งออกสินค้า */}
-          <div className="mt-4">
-            <button
-              onClick={handleSubmitExport}
-              className="btn btn-success"
-              disabled={tableData.length === 0 || !form.address}
-            >
-              ส่งออกสินค้า
-            </button>
-          </div>
+
         </div>
       </div>
     </div>

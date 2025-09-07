@@ -6,7 +6,7 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const createWindow = () => {
+function createWindow () {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1100,
@@ -23,6 +23,14 @@ const createWindow = () => {
     autoHideMenuBar: true,
   });
 
+  // Optionally remove CSP header (เฉพาะในช่วงพัฒนา)
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const headers = details.responseHeaders;
+    delete headers['Content-Security-Policy'];
+    delete headers['content-security-policy'];
+    callback({ responseHeaders: headers });
+  });
+  
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 

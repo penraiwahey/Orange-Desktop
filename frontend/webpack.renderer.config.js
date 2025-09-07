@@ -1,6 +1,6 @@
 const rules = require("./webpack.rules");
 
-// CSS loader
+// เพิ่ม CSS loader (สำหรับไฟล์ CSS ที่ไม่จำกัดแค่ในโฟลเดอร์ที่ include ไว้ใน webpack.rules.js)
 rules.push({
   test: /\.css$/i,
   use: [
@@ -17,7 +17,7 @@ rules.push({
   ],
 });
 
-// รูปภาพ loader
+// เพิ่ม asset loader สำหรับรูปภาพ
 rules.push({
   test: /\.(png|jpe?g|gif|svg)$/i,
   type: "asset/resource",
@@ -25,7 +25,7 @@ rules.push({
 
 module.exports = {
   module: {
-    rules, // ต้องเป็น array
+    rules, // รวมกฎทั้งหมดใน array
   },
   resolve: {
     extensions: [".js", ".jsx", ".json"],
