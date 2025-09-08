@@ -2,185 +2,230 @@ import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 
 export default function ProductsPage() {
-  const [existingProducts, setExistingProducts] = useState([]);
-  const [tempList, setTempList] = useState([]);
-  const [tableData, setTableData] = useState([]);
-  const [form, setForm] = useState({
-    orderId: "",
-    productId: "",
-    productName: "",
-    quantity: "",
-    file: null,
-  });
+  const [existingProducts, setExistingProducts] = useState([]);
+  const [tempList, setTempList] = useState([]);
+  const [importHistory, setImportHistory] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [isNewProduct, setIsNewProduct] = useState(false);
+  const [form, setForm] = useState({
+    orderId: "",
+    productId: "",
+    productName: "",
+    quantity: "",
+    price: "",
+    file: null,
+    imageUrl: "",
+  });
 
-    // ดึงประวัติการนำเข้าสินค้าทั้งหมดจาก DB มาแสดงในตาราง
-    useEffect(() => {
-      fetch("http://localhost:5000/imports")
-        .then(res => res.json())
-        .then(data => {
-          // console.log("Fetched imports data:", data);
-          setTableData(data);
-        })
-        .catch(err => console.error("Error fetching imports:", err));
-    }, []);
-// แก้ไขโค้ดใน useEffect
-useEffect(() => {
-    fetch("http://localhost:5000/products", {
-        headers: {
-            'Accept': 'application/json'
+  const fetchImportHistory = () => {
+    fetch("http://localhost:5000/imports")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Network response was not ok for imports");
         }
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
         return res.json();
-    })
-    .then(data => { // console.log("Fetched products data:", data);
-        setExistingProducts(data); // <--- เพิ่มบรรทัดนี้
-    })
-    .catch((err) => {
+      })
+      .then((data) => setImportHistory(data))
+      .catch((err) => console.error("Error fetching imports:", err));
+  };
+
+  const fetchExistingProducts = () => {
+    fetch("http://localhost:5000/products")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Network response was not ok for products");
+        }
+        return res.json();
+      })
+      .then((data) => setExistingProducts(data))
+      .catch((err) => {
         console.error("Error fetching products:", err);
-        alert("Failed to load products data. Please check the console for details.");
+        Swal.fire("Error", "Failed to load products data.", "error");
+      });
+  };
+
+  useEffect(() => {
+    fetchImportHistory();
+    fetchExistingProducts();
+  }, []);
+
+  const handleProductTypeChange = (isNew) => {
+    setIsNewProduct(isNew);
+    setForm((prev) => ({
+      ...prev,
+      productId: "",
+      productName: "",
+      file: null,
+      price: "",
+      imageUrl: "",
+    }));
+  };
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+
+    if (name === "productId" && !isNewProduct) {
+      const selectedProduct = existingProducts.find((p) => p.product_id === value);
+      setForm((prev) => ({
+        ...prev,
+        productId: value,
+        productName: selectedProduct ? selectedProduct.product_name : "",
+        imageUrl: selectedProduct?.image_path ? `http://localhost:5000${selectedProduct.image_path}` : "",
+        file: null,
+      }));
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+      // If a file is being uploaded, clear the imageUrl.
+      imageUrl: files ? "" : prev.imageUrl,
+    }));
+  };
+
+  const handleAddToTempList = () => {
+    const { productId, quantity, productName } = form;
+
+    if (!quantity || parseInt(quantity, 10) <= 0) {
+      Swal.fire("ข้อผิดพลาด", "กรุณาใส่จำนวนที่ถูกต้อง", "error");
+      return;
+    }
+
+    if (isNewProduct) {
+      if (!productId.trim() || !productName.trim()) {
+        Swal.fire("ข้อผิดพลาด", "สำหรับสินค้าใหม่ กรุณากรอกรหัสและชื่อสินค้า", "error");
+        return;
+      }
+      if (existingProducts.some((p) => p.product_id === productId.trim())) {
+        Swal.fire("ข้อผิดพลาด", `รหัสสินค้า '${productId.trim()}' มีอยู่แล้วในระบบ`, "error");
+        return;
+      }
+    } else {
+      if (!productId) {
+        Swal.fire("ข้อผิดพลาด", "กรุณาเลือกสินค้าที่มีอยู่", "error");
+        return;
+      }
+    }
+
+    const finalProductName = isNewProduct
+      ? productName.trim()
+      : existingProducts.find((p) => p.product_id === productId)?.product_name || "";
+
+    const itemToAdd = { ...form, productName: finalProductName };
+
+    setTempList((prev) => [...prev, itemToAdd]);
+    // Reset only product-specific fields, keep orderId for the batch
+    setForm({
+      orderId: form.orderId, // Keep the current orderId for the batch
+      productId: "",
+      productName: "",
+      quantity: "",
+      price: "",
+      file: null,
+      imageUrl: "",
     });
-}, []);
+    Swal.fire("ลงลิสต์สำเร็จ!", "", "success");
+  };
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
-  };
+  const handleCancelList = () => {
+    if (tempList.length === 0) return;
+    Swal.fire({
+      title: "คุณต้องการยกเลิกลิสต์หรือไม่?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "ยืนยัน",
+      cancelButtonText: "ยกเลิก",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setTempList([]);
+      }
+    });
+  };
 
-  // เพิ่มเข้า list ชั่วคราว พร้อม SweetAlert2 ตรวจสอบก่อนลงลิสต์
-  const handleAddToTempList = async () => {
-    if (!form.productId.trim()) {
-      return Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "กรุณาใส่รหัสสินค้า",
-      });
-    }
+  const handleConfirmImport = async () => {
+    if (tempList.length === 0) {
+      Swal.fire("ไม่มีรายการ", "กรุณาเพิ่มสินค้าในลิสต์ก่อน", "warning");
+      return;
+    }
 
-    // ตรวจสอบว่ารหัสสินค้ามีอยู่แล้วในระบบ
-    const exists = existingProducts.find(
-      (p) => p.product_id === form.productId.trim()
-    );
+    const result = await Swal.fire({
+      title: "ยืนยันการนำเข้าสินค้า?",
+      text: `คุณต้องการนำเข้าสินค้าทั้งหมด ${tempList.length} รายการใช่หรือไม่?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ยืนยัน",
+      cancelButtonText: "ยกเลิก",
+    });
 
-    // ถ้าเป็นสินค้าคนใหม่ (ไม่พบ) ต้องใส่ชื่อสินค้า
-    if (!exists && (!form.productName || !form.productName.trim())) {
-      return Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "สำหรับสินค้าคนใหม่ กรุณาใส่ชื่อสินค้า",
-      });
-    }
+    if (!result.isConfirmed) return;
 
-    // แสดง SweetAlert2 ยืนยันการลงลิสต์ พร้อมแสดงรายละเอียด
-    const result = await Swal.fire({
-      title: "คุณต้องการลงลิสต์หรือไม่?",
-      html: `<p>รหัสสินค้า: <strong>${form.productId.trim()}</strong></p>
-             <p>ชื่อสินค้า: <strong>${exists ? (form.productName.trim() || "-") : form.productName.trim()}</strong></p>
-             <p>จำนวน: <strong>${form.quantity}</strong></p>`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "ลงลิสต์",
-      cancelButtonText: "ยกเลิก",
-    });
-    
-    if (result.isConfirmed) {
-      setTempList((prev) => [...prev, form]);
-      setForm({ orderId: "", productId: "", productName: "", quantity: "", file: null });
-      Swal.fire({
-        icon: "success",
-        title: "ลงลิสต์สำเร็จ",
-        timer: 1500,
-        showConfirmButton: false
-      });
-    }
-  };
+    try {
+      const formData = new FormData();
 
-  // กดยืนยันการยกเลิกลิสต์ โดยใช้ SweetAlert2 เพื่อยืนยันการล้าง tempList
-  const handleCancelList = () => {
-    Swal.fire({
-      title: "คุณต้องการยกเลิกลิสต์หรือไม่?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "ยืนยัน",
-      cancelButtonText: "ยกเลิก"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setTempList([]);
-        Swal.fire({
-          icon: "success",
-          title: "ยกเลิกลิสต์เรียบร้อยแล้ว",
-          timer: 1500,
-          showConfirmButton: false
-        });
-      }
-    });
-  };
+      formData.append('orderId', form.orderId); // Add the custom Order ID to the form data
+      // 1. Prepare the metadata for each item
+      const itemsToImport = tempList.map((item) => ({
+        product_id: item.productId.trim(),
+        product_name: item.productName.trim(),
+        quantity: parseInt(item.quantity, 10),
+        price: item.price,
+        // Include the original filename if a file exists, to map on the backend
+        original_filename: item.file ? item.file.name : null,
+      }));
 
-  // เพิ่ม list ชั่วคราวทั้งหมดเข้า table พร้อมส่งข้อมูลไปยัง API
-  // หลังจากส่งข้อมูลแล้ว ระบบจะดึงประวัติทั้งหมดจาก API มาแสดงในตาราง
-  const handleConfirmAddToTable = async () => {
-    const result = await Swal.fire({
-      title: "คุณต้องการเพิ่มสินค้าทั้งหมดในลิสต์หรือไม่?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "เพิ่มสินค้า",
-      cancelButtonText: "ยกเลิก"
-    });
+      // 2. Append the metadata array as a JSON string
+      formData.append('items', JSON.stringify(itemsToImport));
 
-    if (!result.isConfirmed) {
-      return;
-    }
+      // 3. Append all the files
+      tempList.forEach(item => {
+        if (item.file) {
+          // The field name 'files' must match what multer expects on the backend
+          formData.append('files', item.file);
+        }
+      });
 
-    try {
-      // ส่งเป็นครั้งเดียว โดย wrap รายการทั้งหมดลงใน key "items"
-      const items = tempList.map(item => ({
-        product_id: item.productId.trim(),
-        product_name: item.productName ? item.productName.trim() : "",
-        quantity: parseInt(item.quantity, 10)
-      }));
-      
-      const response = await fetch("http://localhost:5000/imports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items })
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: errorData.error,
-        });
-        return;
-      }
-  
-        const res = await fetch("http://localhost:5000/imports");
-        const data = await res.json();
-        console.log("Fetched import data:", data);
-      setTableData(data);
-  
-      setTempList([]);
-      Swal.fire({
-        icon: "success",
-        title: "เพิ่มสินค้าเรียบร้อยแล้ว",
-        timer: 1500,
-        showConfirmButton: false
-      });
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: "error",
-        title: "เกิดข้อผิดพลาด",
-        text: err.message,
-      });
-    }
-  };
+      const response = await fetch("http://localhost:5000/imports", {
+        method: "POST",
+        // DO NOT set Content-Type header, the browser does it for you with FormData
+        body: formData,
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "เกิดข้อผิดพลาดในการนำเข้า");
+      }
+
+      await response.json();
+      Swal.fire("สำเร็จ!", "นำเข้าสินค้าเรียบร้อยแล้ว", "success");
+
+      setTempList([]);
+      // Reset the form, including orderId
+      setForm({
+        orderId: "",
+        productId: "",
+        productName: "",
+        quantity: "",
+        price: "",
+        file: null,
+        imageUrl: "",
+      });
+      fetchImportHistory();
+      fetchExistingProducts();
+    } catch (err) {
+      Swal.fire("เกิดข้อผิดพลาด!", err.message, "error");
+    }
+  };
+
+  // Pagination logic for import history
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentHistoryItems = importHistory.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(importHistory.length / itemsPerPage);
 
   return (
     <div>
@@ -199,61 +244,103 @@ useEffect(() => {
                 className="input input-warning w-full bg-white focus:border-amber-700 text-black"
               />
             </li>
-            <li>
-              <input
-                type="text"
-                name="productId"
-                value={form.productId}
-                onChange={handleChange}
-                placeholder="รหัสสินค้า"
-                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
-              />
+            <li className="form-control">
+              <label className="label cursor-pointer">
+                <span className="label-text text-black">สินค้าที่มีอยู่</span>
+                <input type="radio" name="productType" className="radio radio-warning" checked={!isNewProduct} onChange={() => handleProductTypeChange(false)} />
+              </label>
+              <label className="label cursor-pointer ml-4">
+                <span className="label-text text-black">สินค้าใหม่</span>
+                <input type="radio" name="productType" className="radio radio-warning" checked={isNewProduct} onChange={() => handleProductTypeChange(true)} />
+              </label>
             </li>
+
+            {isNewProduct ? (
+              <>
+                <li>
+                  <input type="text" name="productId" value={form.productId} onChange={handleChange} placeholder="รหัสสินค้าใหม่" className="input input-warning w-full bg-white text-black" />
+                </li>
+                <li>
+                  <input type="text" name="productName" value={form.productName} onChange={handleChange} placeholder="ชื่อสินค้าใหม่" className="input input-warning w-full bg-white text-black" />
+                </li>
+                <li>
+                  <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="ราคา" className="input input-warning w-full bg-white text-black" min="0" step="0.01" />
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <select name="productId" value={form.productId} onChange={handleChange} className="select select-warning w-full bg-white text-black">
+                    <option value="">-- เลือกสินค้า --</option>
+                    {existingProducts.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.product_id} - {p.product_name}
+                      </option>
+                    ))}
+                  </select>
+                </li>
+                <li>
+                  <input
+                    type="text"
+                    name="productName"
+                    value={form.productName}
+                    placeholder="ชื่อสินค้า"
+                    className="input input-warning w-full bg-white text-black"
+                    readOnly
+                  />
+                </li>
+              </>
+            )}
             <li>
               <input
-                type="text"
-                name="productName"
-                value={form.productName}
-                onChange={handleChange}
-                placeholder="ชื่อสินค้า (สำหรับสินค้าคนใหม่)"
-                className="input input-warning w-full bg-white focus:border-amber-700 text-black"
-              />
-            </li>
-            <li>
-              <input
-                type="text"
+                type="number"
                 name="quantity"
                 value={form.quantity}
                 onChange={handleChange}
                 placeholder="จำนวน"
                 className="input input-warning w-full bg-white focus:border-amber-700 text-black"
+                min="1"
               />
             </li>
-            <li>
-              <input
-                type="file"
-                name="file"
-                onChange={handleChange}
-                className="file-input file-input-warning w-full bg-white focus:border-amber-700 text-gray-500"
-              />
-            </li>
+            {isNewProduct && (
+              <li>
+                <input
+                  type="file"
+                  name="file"
+                  onChange={handleChange}
+                  className="file-input file-input-warning w-full bg-white focus:border-amber-700 text-gray-500"
+                />
+              </li>
+            )}
+            {/* Image Preview */}
+            {(form.imageUrl || form.file) && (
+              <li className="mt-2">
+                <p className="text-sm text-black font-medium">รูปภาพตัวอย่าง:</p>
+                <img
+                  src={form.file ? URL.createObjectURL(form.file) : form.imageUrl}
+                  alt="ตัวอย่าง"
+                  className="w-24 h-24 object-contain rounded-md border bg-white mt-1"
+                />
+              </li>
+            )}
             <li>
               <p className="text-gray-500">วันที่จะลงให้อัตโนมัติ</p>
             </li>
             {/* แสดงรายการสินค้าใน tempList */}
             <li className="w-80">
               <div className="text-sm text-black">
-                <ul className="flex max-h-40 overflow-y-auto space-y-1 pr-1">
+                <h3 className="font-bold my-2">รายการรอนำเข้า:</h3>
+                <ul className="flex flex-col max-h-40 overflow-y-auto space-y-1 pr-1">
                   {tempList.length === 0 ? (
                     <li className="text-gray-400">ยังไม่มีสินค้าในลิสต์</li>
                   ) : (
                     tempList.map((item, i) => (
                       <li
                         key={i}
-                        className="truncate bg-amber-500 rounded pl-2 pr-2 py-1"
-                        title={`${item.productName} (${item.quantity})`}
+                        className="truncate bg-amber-200 rounded pl-2 pr-2 py-1 w-1/2"
+                        title={`${item.productName} (จำนวน: ${item.quantity})`}
                       >
-                        {item.productName} ({item.quantity})
+                        {i + 1}. {item.productName} ({item.quantity})
                       </li>
                     ))
                   )}
@@ -261,7 +348,7 @@ useEffect(() => {
               </div>
             </li>
             <li className="flex gap-5">
-              <div className="flex gap-2 mt-20">
+              <div className="flex flex-col gap-2 mt-4 w-full">
                 <button
                   onClick={handleAddToTempList}
                   className="btn btn-outline btn-warning"
@@ -271,17 +358,18 @@ useEffect(() => {
                 <button
                   onClick={handleCancelList}
                   className="btn btn-error"
+                  disabled={tempList.length === 0}
                 >
                   ยกเลิกลิสต์
                 </button>
+                <button
+                  onClick={handleConfirmImport}
+                  className="btn btn-success"
+                  disabled={tempList.length === 0}
+                >
+                  ยืนยันการนำเข้า
+                </button>
               </div>
-              <button
-                onClick={handleConfirmAddToTable}
-                className="btn btn-warning mt-20"
-                disabled={tempList.length === 0}
-              >
-                เพิ่มสินค้า
-              </button>
             </li>
           </ul>
         </div>
@@ -301,41 +389,73 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody>
-              {tableData && tableData.length === 0 ? (
+              {importHistory.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center text-gray-400 py-4">
                     ยังไม่มีสินค้าในตาราง
                   </td>
                 </tr>
               ) : (
-                tableData && Array.isArray(tableData) && tableData.map((item, i) => (
-                  <tr key={item.import_id || i}>
-                    <td className="py-3">{item.import_id || "-"}</td>
-                    <td className="py-3">
-                      {item.file ? (
-                        <img
-                          src={URL.createObjectURL(item.file)}
-                          alt="สินค้า"
-                          className="w-10 h-10 object-contain rounded-md"
-                        />
-                      ) : (
-                        <img
-                          src={existingProducts.find(p => p.product_id === item.product_id)?.image_path || ""}
-                          alt="รูปสินค้า"
-                          className="w-10 h-10 object-contain rounded-md"
-                        />
-                      )}
-                    </td>
-                    <td className="py-3">{item.product_id || "-"}</td>
-                    <td className="py-3">{item.product_name || "-"}</td>
-                    <td className="py-3">{item.quantity !== undefined ? item.quantity : "-"}</td>
-                    <td className="py-3">{new Date(item.import_date).toLocaleDateString()}</td>
-                  </tr>
-                ))
+                <>
+                  {currentHistoryItems.map((item) => (
+                    <tr key={item.import_id}> {/* Use the unique item ID for the key */}
+                      <td className="py-3">{item.batch_id || "-"}</td> {/* Display the shared batch ID */}
+                      <td className="py-3">
+                        {item.image_path ? (
+                          <img
+                            src={`http://localhost:5000${item.image_path}`}
+                            alt="สินค้า"
+                            className="w-10 h-10 object-contain rounded-md"
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="py-3">{item.product_id || "-"}</td>
+                      <td className="py-3">{item.product_name || "-"}</td>
+                      <td className="py-3">{item.quantity !== undefined ? item.quantity : "-"}</td>
+                      <td className="py-3">{new Date(item.import_date).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                  {currentHistoryItems.length < itemsPerPage &&
+                    Array.from({ length: itemsPerPage - currentHistoryItems.length }).map((_, index) => (
+                      <tr key={`empty-${index}`} className="h-16 text-center">
+                        <td colSpan="6">-</td>
+                      </tr>
+                    ))}
+                </>
               )}
             </tbody>
           </table>
           </div>
+          {/* Pagination Controls */}
+          {totalPages > 1 ? (
+            <div className="flex justify-center mt-4">
+              <div className="join">
+                <button
+                  className="join-item btn"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >«</button>
+                <button className="join-item btn">
+                  Page {currentPage} of {totalPages}
+                </button>
+                <button
+                  className="join-item btn"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >»</button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center mt-4">
+              <div className="join">
+                <button className="join-item btn btn-disabled">«</button>
+                <button className="join-item btn btn-disabled">-</button>
+                <button className="join-item btn btn-disabled">»</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
