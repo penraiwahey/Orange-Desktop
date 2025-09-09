@@ -10,7 +10,7 @@ export default function Homepage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
 
-  const tabs = ["นำเข้าสินค้า", "ส่งออกสินค้า", "สต็อคสินค้า"];
+  const tabs = ["นำเข้าสินค้า", "ส่งออกสินค้า", "สต็อกสินค้า"];
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");

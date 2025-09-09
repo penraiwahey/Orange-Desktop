@@ -19,11 +19,10 @@ export default function LoginPage() {
       {/* Left panel */}
       <div className="hidden md:flex bg-amber-600 w-1/3 flex-col items-center justify-center p-12 text-white shadow-lg">
         <h2 className="text-4xl font-extrabold mb-6 drop-shadow-lg">
-          ยินดีต้อนรับสู่ Ecommerce
+          ยินดีต้อนรับเข้าสู่ Orange
         </h2>
         <p className="text-lg leading-relaxed max-w-sm text-amber-100">
-          พบประสบการณ์ช้อปปิ้งที่ดีที่สุดกับเรา สินค้าหลากหลาย ราคาถูกใจ
-          พร้อมโปรโมชั่นมากมายรอคุณอยู่
+          พบกับประสบการณ์เพิ่มประสิทธิภาพธุรกิจด้วย Orange ทั้งรับ-ส่งและสต็อกสินค้า ครบจบในที่เดียว
         </p>
       </div>
 
