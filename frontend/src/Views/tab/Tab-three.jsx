@@ -62,6 +62,94 @@ export default function ProductsPage() {
     }
   };
 
+  const handleEditProduct = async (product) => {
+    const { value: formValues } = await Swal.fire({
+      title: `แก้ไขสินค้า: ${product.product_name}`,
+      html: `
+        <div class="flex flex-col justify-center items-center space-y-4 text-left">
+          <label for="swal-input-id" class="text-sm text-gray-600">รหัสสินค้า:</label>
+          <input id="swal-input-id" class="swal2-input" value="${product.product_id}" placeholder="รหัสสินค้า">
+          <label for="swal-input-name" class="text-sm text-gray-600">ชื่อสินค้า:</label>
+          <input id="swal-input-name" class="swal2-input" value="${product.product_name}" placeholder="ชื่อสินค้า">
+          <label for="swal-input-price" class="text-sm text-gray-600">ราคา:</label>
+          <input id="swal-input-price" type="number" class="swal2-input" value="${product.price}" placeholder="ราคา" min="0" step="0.01">
+          <label for="swal-input-stock" class="text-sm text-gray-600">สินค้าคงเหลือ:</label>
+          <input id="swal-input-stock" type="number" class="swal2-input" value="${product.stock_quantity}" placeholder="สินค้าคงเหลือ" min="0">
+          <div class="w-full flex flex-col justify-center items-center space-y-4 text-left">
+            <label for="swal-input-file" class="text-sm text-gray-600">เปลี่ยนรูปภาพ (ถ้าต้องการ):</label>
+            <input id="swal-input-file" type="file" class="swal2-file w-full mt-1" accept="image/*">
+            <img id="swal-image-preview" src="${product.image_path ? `http://localhost:5000${product.image_path}` : ''}" alt="Preview" class="mt-2 w-24 h-24 object-contain rounded-md border ${!product.image_path && 'hidden'}">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "บันทึก",
+      cancelButtonText: "ยกเลิก",
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-input-file');
+        const imagePreview = document.getElementById('swal-image-preview');
+        fileInput.onchange = () => {
+          if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              imagePreview.src = e.target.result;
+              imagePreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+          }
+        };
+      },
+      preConfirm: () => {
+        const productId = document.getElementById('swal-input-id').value;
+        const productName = document.getElementById('swal-input-name').value;
+        const price = document.getElementById('swal-input-price').value;
+        const stock_quantity = document.getElementById('swal-input-stock').value;
+        const file = document.getElementById('swal-input-file').files[0];
+
+        if (!productId.trim() || !productName.trim() || !price || stock_quantity === '') {
+          Swal.showValidationMessage(`กรุณากรอกข้อมูลให้ครบถ้วน (รหัส, ชื่อ, ราคา, สินค้าคงเหลือ)`);
+          return false;
+        }
+        return { 
+          productId: productId.trim(), 
+          productName: productName.trim(), 
+          price: parseFloat(price),
+          stock_quantity: parseInt(stock_quantity, 10),
+          file: file // can be undefined
+        };
+      },
+    });
+
+    if (formValues) {
+      try {
+        const formData = new FormData();
+        formData.append('productId', formValues.productId);
+        formData.append('productName', formValues.productName);
+        formData.append('price', formValues.price);
+        formData.append('stock_quantity', formValues.stock_quantity);
+        if (formValues.file) {
+          formData.append('file', formValues.file);
+        }
+
+        const response = await fetch(`http://localhost:5000/products/${product.product_id}`, {
+          method: "PUT",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "เกิดข้อผิดพลาดในการอัปเดตสินค้า");
+        }
+
+        Swal.fire("สำเร็จ!", "อัปเดตข้อมูลสินค้าเรียบร้อยแล้ว", "success");
+        fetchProducts(); // Refresh the list
+      } catch (error) {
+        Swal.fire("เกิดข้อผิดพลาด!", error.message, "error");
+      }
+    }
+  };
+
   const handleDeleteSelected = async () => {
     const result = await Swal.fire({
       title: `คุณแน่ใจหรือไม่?`,
@@ -154,12 +242,13 @@ export default function ProductsPage() {
               <th className="px-4 py-2 border">ชื่อสินค้า</th>
               <th className="px-4 py-2 border">ราคา</th>
               <th className="px-4 py-2 border">คงเหลือในสต็อก</th>
+              <th className="px-4 py-2 border">จัดการ</th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.length === 0 ? (
-              <tr className="text-black">
-                <td colSpan="7" className="text-center p-4 text-gray-500">
+              <tr>
+                <td colSpan="8" className="text-center p-4 text-gray-500">
                   ไม่พบสินค้าที่ค้นหา
                 </td>
               </tr>
@@ -196,12 +285,20 @@ export default function ProductsPage() {
                     <td className="px-4 py-2 border">{product.product_name}</td>
                     <td className="px-4 py-2 border">{product.price}</td>
                     <td className="px-4 py-2 border">{product.stock_quantity}</td>
+                    <td className="px-4 py-2 border">
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="btn btn-xs btn-outline btn-info"
+                      >
+                        แก้ไข
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {currentItems.length < itemsPerPage &&
                   Array.from({ length: itemsPerPage - currentItems.length }).map((_, index) => (
                     <tr key={`empty-${index}`} className="h-20 text-center">
-                      <td colSpan="7">-</td>
+                      <td colSpan="8">-</td>
                     </tr>
                   ))}
               </>
@@ -216,6 +313,7 @@ export default function ProductsPage() {
               <th className="px-4 py-2 border">ชื่อสินค้า</th>
               <th className="px-4 py-2 border">ราคา</th>
               <th className="px-4 py-2 border">คงเหลือในสต็อก</th>
+              <th className="px-4 py-2 border">จัดการ</th>
             </tr>
           </tfoot>
         </table>

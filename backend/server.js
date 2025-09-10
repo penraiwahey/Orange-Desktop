@@ -198,6 +198,78 @@ app.delete('/products', async (req, res) => {
   }
 });
 
+app.put('/products/:productId', upload.single('file'), async (req, res) => {
+  const { productId: oldProductId } = req.params;
+  const { productId: newProductId, productName, price, stock_quantity } = req.body;
+
+  if (!newProductId || !productName || price === undefined || stock_quantity === undefined) {
+    return res.status(400).json({ error: "Invalid request: 'productId', 'productName', 'price', and 'stock_quantity' are required." });
+  }
+
+  const parsedPrice = parseFloat(price);
+  if (isNaN(parsedPrice) || parsedPrice < 0) {
+    return res.status(400).json({ error: "Invalid price format." });
+  }
+
+  const parsedStock = parseInt(stock_quantity, 10);
+  if (isNaN(parsedStock) || parsedStock < 0) {
+    return res.status(400).json({ error: "Invalid stock quantity format." });
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // ถ้ามีการเปลี่ยน ID สินค้า, ตรวจสอบว่า ID ใหม่ซ้ำกับที่มีอยู่หรือไม่
+    if (oldProductId !== newProductId) {
+      const [existing] = await connection.query('SELECT product_id FROM products WHERE product_id = ? AND deleted_at IS NULL', [newProductId]);
+      if (existing.length > 0) {
+        await connection.rollback();
+        return res.status(409).json({ error: `รหัสสินค้า '${newProductId}' มีอยู่แล้วในระบบ` });
+      }
+    }
+
+    // ตรวจสอบและกำหนด image_path
+    let image_path = null;
+    if (req.file) {
+      image_path = `/images/${req.file.filename}`;
+    } else {
+      // ถ้าไม่มีไฟล์ใหม่, ใช้ path เดิม
+      const [productData] = await connection.query('SELECT image_path FROM products WHERE product_id = ?', [oldProductId]);
+      if (productData.length > 0) {
+        image_path = productData[0].image_path;
+      }
+    }
+
+    // ถ้ามีการเปลี่ยน ID, ให้อัปเดตตารางที่อ้างอิงก่อน
+    if (oldProductId !== newProductId) {
+      await connection.query('UPDATE imports SET product_id = ? WHERE product_id = ?', [newProductId, oldProductId]);
+      await connection.query('UPDATE exports SET product_id = ? WHERE product_id = ?', [newProductId, oldProductId]);
+    }
+
+    // อัปเดตข้อมูลในตาราง products
+    const [updateResult] = await connection.query(
+      'UPDATE products SET product_id = ?, product_name = ?, price = ?, stock_quantity = ?, image_path = ? WHERE product_id = ?',
+      [newProductId.trim(), productName.trim(), parsedPrice, parsedStock, image_path, oldProductId]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      throw new Error(`ไม่พบสินค้า '${oldProductId}'`);
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: `Product ${oldProductId} updated successfully.` });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(`Error in PUT /products/${oldProductId}:`, error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 app.post('/imports', upload.array('files'), async (req, res) => {
   // 'items' data is sent as a JSON string in the 'items' field
   const items = JSON.parse(req.body.items);
