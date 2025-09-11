@@ -64,7 +64,7 @@ export default function ProductsPage() {
 
   const handleEditProduct = async (product) => {
     const { value: formValues } = await Swal.fire({
-      title: `แก้ไขสินค้า: ${product.product_name}`,
+      title: `แก้ไขสินค้า : ${product.product_name}`,
       html: `
         <div class="flex flex-col justify-center items-center space-y-4 text-left">
           <label for="swal-input-id" class="text-sm text-gray-600">รหัสสินค้า:</label>
