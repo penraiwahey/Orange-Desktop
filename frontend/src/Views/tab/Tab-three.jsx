@@ -86,6 +86,8 @@ export default function ProductsPage() {
       showCancelButton: true,
       confirmButtonText: "บันทึก",
       cancelButtonText: "ยกเลิก",
+      confirmButtonColor: "#FAB601",
+      cancelButtonColor: "#EF4444",
       didOpen: () => {
         const fileInput = document.getElementById('swal-input-file');
         const imagePreview = document.getElementById('swal-image-preview');
